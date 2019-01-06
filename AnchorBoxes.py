@@ -1,6 +1,10 @@
 from __future__ import division
-import numpy as np
 from bounding_box_utils import convert_coordinates
+import logging
+import numpy as np
+import tensorflow as tf 
+
+logging.basicConfig(level=logging.DEBUG,format='%(levelname)s:%(message)s')
 
 class AnchorBoxes:
 
@@ -172,8 +176,7 @@ class AnchorBoxes:
         # Create a 4D tensor template of shape `(feature_map_height, feature_map_width, n_boxes, 4)`
         # where the last dimension will contain `(cx, cy, w, h)`
         boxes_tensor = np.zeros((feature_map_height, feature_map_width, self.n_boxes, 4))
-        print(boxes_tensor.shape)
-        print(wh_list[:,0].shape)
+
 
         boxes_tensor[:, :, :, 0] = np.tile(cx_grid, (1, 1, self.n_boxes)) # Set cx
         boxes_tensor[:, :, :, 1] = np.tile(cy_grid, (1, 1, self.n_boxes)) # Set cy
@@ -218,9 +221,117 @@ class AnchorBoxes:
         # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 8)`
         boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
 
-        boxes_tensor=tf.constant(initial_value=boxes_tensor,dtype=tf.float32)
+        boxes_tensor=tf.constant(value=boxes_tensor,dtype=tf.float32)
 
         return boxes_tensor
+
+
+
+if __name__=='__main__':
+
+    img_size = (300,300,3)
+    img_height = img_size[1]
+    img_width = img_size[0]
+    n_classes = 20
+    mode ='training'
+    l2_regularization = 0.0005
+    min_scale = None
+    max_scale = None
+    scales = [0.1,0.2,0.37,0.54,0.71,0.88,1.05]
+    aspect_ratios_global = None
+    aspect_ratios = [[1.0,2.0,0.5],
+                         [1.0,2.0,0.5,3.0,1.0/3.0],
+                         [1.0,2.0,0.5,3.0,1.0/3.0],
+                         [1.0,2.0,0.5,3.0,1.0/3.0],
+                         [1.0,2.0,0.5],
+                         [1.0,2.0,0.5]]
+    two_boxes_for_ar1 = True
+    steps = [8,16,32,64,100,300]
+    offsets = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+    clip_boxes = False
+    variances = [0.1,0.1,0.2,0.2]
+    coords = 'centroids'
+    normalize_coords = True
+    subtract_mean = [123,117,104]
+    divide_by_stddev = None
+    confidence_thresh = 0.01
+    iou_thrshold = 0.45
+    top_k = 200
+    nms_max_output_size = 400
+    return_predictor_sizes = False
+
+    # Create NumPy Location layers , in order to AnchorBoxes can get the Layer widths and heights
+
+    conv4_3_norm_mbox_loc = np.reshape(np.random.rand(1,1*38*38*16),(1,38,38,16))
+
+    fc7_mbox_loc = np.reshape(np.random.rand(1,1*19*19*16),(1,19,19,16))
+
+    conv6_2_mbox_loc = np.reshape(np.random.rand(1,1*10*10*16),(1,10,10,16))
+
+    conv7_2_mbox_loc = np.reshape(np.random.rand(1,1*5*5*24),(1,5,5,24))
+
+    conv8_2_mbox_loc = np.reshape(np.random.rand(1,1*3*3*24),(1,3,3,24))
+
+    conv9_2_mbox_loc = np.reshape(np.random.rand(1,1*1*1*24),(1,1,1,24))
+
+
+    # Conver NumPy Location Layers to TensorFlow Layers
+
+    conv4_3_norm_mbox_loc = tf.Variable(conv4_3_norm_mbox_loc,dtype=tf.float32)
+
+    fc7_mbox_loc = tf.Variable(fc7_mbox_loc,dtype=tf.float32)
+
+    conv6_2_mbox_loc = tf.Variable(conv6_2_mbox_loc,dtype=tf.float32)
+
+    conv7_2_mbox_loc = tf.Variable(conv7_2_mbox_loc,dtype=tf.float32)
+
+    conv8_2_mbox_loc = tf.Variable(conv8_2_mbox_loc,dtype=tf.float32)
+
+    conv9_2_mbox_loc = tf.Variable(conv9_2_mbox_loc,dtype=tf.float32)
+
+
+
+
+    ### Generate the anchor boxes
+
+    # Output shape of anchors: (batch, height, width, n_boxes, 8)
+    conv4_3_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[0],next_scale=scales[1],aspect_ratios=aspect_ratios[0],
+                                             two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[0],this_offsets=offsets[0],clip_boxes=clip_boxes,
+                                             variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv4_3_norm_mbox_loc)
+
+    logging.debug('conv4_3_norm_mbox_priorbox has a shape {}'.format(conv4_3_norm_mbox_priorbox.get_shape()))
+
+    fc7_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[1],next_scale=scales[2],aspect_ratios=aspect_ratios[1],
+                                             two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[1],this_offsets=offsets[1],clip_boxes=clip_boxes,
+                                             variances=variances,coords=coords,normalize_coords=normalize_coords).call(fc7_mbox_loc)
+
+    logging.debug('fc7_mbox_priorbox has a shape {}'.format(fc7_mbox_priorbox.get_shape()))
+
+    conv6_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[2],next_scale=scales[3],aspect_ratios=aspect_ratios[2],
+                                         two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[2],this_offsets=offsets[2],clip_boxes=clip_boxes,
+                                         variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv6_2_mbox_loc)
+
+    logging.debug('conv6_2_norm_mbox_priorbox has a shape {}'.format(conv6_2_norm_mbox_priorbox.get_shape()))
+
+    conv7_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[3],next_scale=scales[4],aspect_ratios=aspect_ratios[3],
+                                         two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[3],this_offsets=offsets[3],clip_boxes=clip_boxes,
+                                         variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv7_2_mbox_loc)
+
+    logging.debug('conv7_2_norm_mbox_priorbox has a shape {}'.format(conv7_2_norm_mbox_priorbox.get_shape()))
+
+    conv8_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[4],next_scale=scales[5],aspect_ratios=aspect_ratios[4],
+                                     two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[4],this_offsets=offsets[4],clip_boxes=clip_boxes,
+                                     variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv8_2_mbox_loc)
+
+    logging.debug('conv8_2_norm_mbox_priorbox has a shape {}'.format(conv8_2_norm_mbox_priorbox.get_shape()))
+
+    conv9_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[5],next_scale=scales[6],aspect_ratios=aspect_ratios[5],
+                                     two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[5],this_offsets=offsets[5],clip_boxes=clip_boxes,
+                                     variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv9_2_mbox_loc)
+
+    logging.debug('conv9_2_norm_mbox_priorbox has a shape {}'.format(conv9_2_norm_mbox_priorbox.get_shape()))
+
+
 
 
 
