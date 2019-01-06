@@ -1,14 +1,12 @@
 from __future__ import division
 import numpy as np
+import tensorflow as tf 
 from AnchorBoxes import AnchorBoxes
 # from keras_layers.keras_layer_L2Normalization import L2Normalization
 # from keras_layers.keras_layer_DecodeDetections import DecodeDetections
 # from keras_layers.keras_layer_DecodeDetectionsFast import DecodeDetectionsFast
-
 def ssd_300(image_size,
             n_classes,
-            features,
-            params
             mode ='training',
             l2_regularization = 0.0005,
             min_scal = None,
@@ -155,294 +153,290 @@ def ssd_300(image_size,
 
     ###############################
 
-    if aspect_ratios_global is None and aspect_ratios_per_layer is None:
-        raise ValueError('aspect_ratios_global and aspect_reatios_per_layer cannot both be None.At least one needs to be specified')
-    if aspect_ratios_per_layer:
-        if len(aspect_ratios_per_layer) != n_predicto_layers:
-            raise ValueError('''It must be either aspect_ratios_per_layer is None or len(aspect_ratios_per_layer) == {}, 
-            but len(aspect_ratios_per_layer) == {}'''.format(n_predictors_layers,len(aspect_ratios_layer)))
+	if aspect_ratios_global is None and aspect_ratios_per_layer is None:
+	    raise ValueError('aspect_ratios_global and aspect_reatios_per_layer cannot both be None.At least one needs to be specified')
+	if aspect_ratios_per_layer:
+	    if len(aspect_ratios_per_layer) != n_predictor_layers:
+	        raise ValueError('It must be either aspect_ratios_per_layer is None or len(aspect_ratios_per_layer) == {}, but len(aspect_ratios_per_layer) == {}'.format(n_predictor_layers,len(aspect_ratios_per_layer)))
 
-    if (min_scal is None or max_scale is None) and scales is None:
-        raise ValueError('Either min_scale and max_scale or scales need to be specified')
-    if scales:
-        if len(scales) != n_predictor_layers + 1:
-            raise ValueError('''It must be either scales is None or len(scales) == {},but len(scales) == {}'''.format(n_predictor_layers+1,len(scales)))
-    else: # IF no explicit list of scaling factors was passed,compute the list of scaling factors from min_scale and max_scale
-        scales = np.linspace(min_scale,max_scale,n_predictor_layers + 1)
+	if (min_scale is None or max_scale is None) and scales is None:
+	    raise ValueError('Either min_scale and max_scale or scales need to be specified')
+	if scales:
+	    if len(scales) != n_predictor_layers + 1:
+	        raise ValueError('''It must be either scales is None or len(scales) == {},but len(scales) == {}'''.format(n_predictor_layers+1,len(scales)))
+	else: # IF no explicit list of scaling factors was passed,compute the list of scaling factors from min_scale and max_scale
+	    scales = np.linspace(min_scale,max_scale,n_predictor_layers + 1)
 
-    if len(variances) != 4:
-        raise ValueError('4 variances values must be passed,but {} values were recieved'.format(len(variances)))
-    variances = np.array(variances)
-    if np.any(variances <= 0):
-        raise ValueError('All varinces must be > 0,but the variances given are {}'.format(variances))
+	if len(variances) != 4:
+	    raise ValueError('4 variances values must be passed,but {} values were recieved'.format(len(variances)))
+	variances = np.array(variances)
+	if np.any(variances <= 0):
+	    raise ValueError('All varinces must be > 0,but the variances given are {}'.format(variances))
 
 
-    if (not (steps is None)) and (len(steps) != n_predictors_layers):
-        raise ValueError('You must provide at least one step value per predictor layer')
+	if (not (steps is None)) and (len(steps) != n_predictor_layers):
+	    raise ValueError('You must provide at least one step value per predictor layer')
 
-    if (not (offset is None)) and (len(offsets) != n_predictors_layers):
-        raise ValueError('You must provide at least one offset value per predictor layer')
+	if (not (offsets is None)) and (len(offsets) != n_predictors_layers):
+	    raise ValueError('You must provide at least one offset value per predictor layer')
 
-     ###############################
+	 ###############################
 
-    # Compute the anchor box parameters
+	# Compute the anchor box parameters
 
-    ###############################
+	###############################
 
-    # Set the aspect ratios for each predictor layer
-    if aspect_ratios_per_layer:
-        aspect_ratios=aspect_ratios_per_layer
-    else:
-        aspect_ratios = [aspect_ratios_global] * n_predictor_layers
+	# Set the aspect ratios for each predictor layer
+	if aspect_ratios_per_layer:
+	    aspect_ratios=aspect_ratios_per_layer
+	else:
+	    aspect_ratios = [aspect_ratios_global] * n_predictor_layers
 
-    # Compute the number of boxes to be predicted per cell for each predictor layer
-    # We need this so that we know how many channels the predictor layers need to have
+	# Compute the number of boxes to be predicted per cell for each predictor layer
+	# We need this so that we know how many channels the predictor layers need to have
 
-    if aspect_ratios_per_layer:
-        n_boxes=[]
-        for  ar in aspect_ratios_per_layer:
-            if (1 in ar) & two_boxes_for_ar1:
-                n_boxes.append(len(ar) + 1) # +1 for the second box for aspect ratio 1
-            else:
-                n_boxes.append(len(ar))
-    else:# If only a global aspect ratio list was passed, then the number of boxes is the same for each predictor layer
-        if (1 in aspect_ratios_global) & two_boxes_for_ar1:
-            n_boxes = len(aspect_ratios_global) + 1
-        else:
-            n_boxes = len(aspect_ratios_global)
-        n_boxes = [n_boxes] * n_predictor_layers
+	if aspect_ratios_per_layer:
+	    n_boxes=[]
+	    for  ar in aspect_ratios_per_layer:
+	        if (1 in ar) & two_boxes_for_ar1:
+	            n_boxes.append(len(ar) + 1) # +1 for the second box for aspect ratio 1
+	        else:
+	            n_boxes.append(len(ar))
+	else:# If only a global aspect ratio list was passed, then the number of boxes is the same for each predictor layer
+	    if (1 in aspect_ratios_global) & two_boxes_for_ar1:
+	        n_boxes = len(aspect_ratios_global) + 1
+	    else:
+	        n_boxes = len(aspect_ratios_global)
+	    n_boxes = [n_boxes] * n_predictor_layers
 
-    if steps is None:
-        steps = [None] * n_predictor_layers
-    if offsets is None:
-        offsets = [None] * n_predictor_layers
+	if steps is None:
+	    steps = [None] * n_predictor_layers
+	if offsets is None:
+	    offsets = [None] * n_predictor_layers
 
-     ###############################
 
-    # Define preprocessing functions (OPTIONAL) | Переписать на тензоры
 
-    ###############################
+	loc=r'/home/eva_01/Desktop/SSD_project/testImages/car.jpg'
 
-    # def identity_layer(tensor):
-    #     return tensor
-    #
-    # def input_mean_normalization(tensor):
-    #     return tensor - np.array(subtract_mean)
-    #
-    # def input_stddev_normalization(tensor):
-    #     return tensor / np.array(divide_by_stddev)
-    #
+	img=Image.open(loc)
 
-    ###############################
+	img=np.asarray(img.resize((300,300)),dtype=np.float32)
 
-    # Build the network
+	input_layer = tf.reshape(tf.Variable(img,tf.float32),[-1,300,300,3])
 
-    ###############################
 
-    input_layer=tf.reshape(features['x'],[-1,params['IMG_SIZE'],params['IMG_SIZE'],3])
+	conv1_1=tf.layers.conv2d(inputs=input_layer,filters=64,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 300, 300, 64)
 
-    conv1_1=tf.layers.conv2d(inputs=input_layer,filters=64,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 300, 300, 64)
+	conv1_2=tf.layers.conv2d(inputs=conv1_1,filters=64,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 300, 300, 64)
 
-    conv1_2=tf.layers.conv2d(inputs=conv1_1,filters=64,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 300, 300, 64)
+	pool1=tf.layers.max_pooling2d(inputs=conv1_2,pool_size=[2,2],strides=2,padding='same') #(1, 150, 150, 64)
 
-    pool1=tf.layers.max_pooling2d(inputs=conv1_2,pool_size=[2,2],strides=2,padding='same') #(1, 150, 150, 64)
 
+	conv2_1=tf.layers.conv2d(inputs=pool1,filters=128,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 150, 150, 128)
 
-    conv2_1=tf.layers.conv2d(inputs=pool1,filters=128,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 150, 150, 128)
+	conv2_2=tf.layers.conv2d(inputs=conv2_1,filters=128,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 150, 150, 128)
 
-    conv2_2=tf.layers.conv2d(inputs=conv2_1,filters=128,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 150, 150, 128)
+	pool2=tf.layers.max_pooling2d(inputs=conv2_2,pool_size=[2,2],strides=2,padding='same') #(1, 75, 75, 128)
 
-    pool2=tf.layers.max_pooling2d(inputs=conv2_2,pool_size=[2,2],strides=2,padding='same') #(1, 75, 75, 128)
 
+	conv3_1=tf.layers.conv2d(inputs=pool2,filters=256,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 75, 75, 256)
 
-    conv3_1=tf.layers.conv2d(inputs=pool2,filters=256,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 75, 75, 256)
+	conv3_2=tf.layers.conv2d(inputs=conv3_1,filters=256,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 75, 75, 256)
 
-    conv3_2=tf.layers.conv2d(inputs=conv3_1,filters=256,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 75, 75, 256)
+	conv3_3=tf.layers.conv2d(inputs=conv3_2,filters=256,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 75, 75, 256)
 
-    conv3_3=tf.layers.conv2d(inputs=conv3_2,filters=256,kernel_size=[3,3],padding='same',activation=tf.nn.relu) #(1, 75, 75, 256)
+	pool3=tf.layers.max_pooling2d(inputs=conv3_3,pool_size=[2,2],strides=2,padding='same') #(1, 38, 38, 256)
 
-    pool3=tf.layers.max_pooling2d(inputs=conv3_3,pool_size=[2,2],strides=2,padding='same') #(1, 38, 38, 256)
 
+	conv4_1=tf.layers.conv2d(inputs=pool3,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 38, 38, 512)
 
-    conv4_1=tf.layers.conv2d(inputs=pool3,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 38, 38, 512)
+	conv4_2=tf.layers.conv2d(inputs=conv4_1,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 38, 38, 512)
 
-    conv4_2=tf.layers.conv2d(inputs=conv4_1,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 38, 38, 512)
+	conv4_3=tf.layers.conv2d(inputs=conv4_2,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 38, 38, 512)
 
-    conv4_3=tf.layers.conv2d(inputs=conv4_2,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 38, 38, 512)
+	pool4=tf.layers.max_pooling2d(inputs=conv4_3,pool_size=[2,2],strides=2,padding='same') # (1, 19, 19, 512)
 
-    pool4=tf.layers.max_pooling2d(inputs=conv4_3,pool_size=[2,2],strides=2,padding='same') # (1, 19, 19, 512)
 
+	conv5_1=tf.layers.conv2d(inputs=pool4,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 512)
 
-    conv5_1=tf.layers.conv2d(inputs=pool4,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 512)
+	conv5_2=tf.layers.conv2d(inputs=conv5_1,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 512)
 
-    conv5_2=tf.layers.conv2d(inputs=conv5_1,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 512)
+	conv5_3=tf.layers.conv2d(inputs=conv5_2,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 512)
 
-    conv5_3=tf.layers.conv2d(inputs=conv5_2,filters=512,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 512)
+	pool5=tf.layers.max_pooling2d(inputs=conv5_3,pool_size=[3,3],strides=1,padding='same') # (1, 19, 19, 512)
 
-    pool5=tf.layers.max_pooling2d(inputs=conv5_3,pool_size=[3,3],strides=1,padding='same') # (1, 19, 19, 512)
 
 
+	fc6=tf.layers.conv2d(inputs=pool5,filters=1024,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 1024)
 
-    fc6=tf.layers.conv2d(inputs=pool5,filters=1024,kernel_size=[3,3],padding='same',activation=tf.nn.relu) # (1, 19, 19, 1024)
+	fc7=tf.layers.conv2d(inputs=fc6,filters=1024,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 19, 19, 1024)
 
-    fc7=tf.layers.conv2d(inputs=fc6,filters=1024,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 19, 19, 1024)
+	conv6_1=tf.layers.conv2d(inputs=fc7,filters=256,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 19, 19, 256)
 
-    conv6_1=tf.layers.conv2d(inputs=fc7,filters=256,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 19, 19, 256)
+	conv6_1=tf.pad(conv6_1, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT") # (1, 19, 19, 256)
 
-    conv6_1=tf.pad(conv6_1, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT") # (1, 19, 19, 256)
+	conv6_2=tf.layers.conv2d(inputs=conv6_1,filters=512,kernel_size=[3,3],strides=(2,2),padding='valid',activation=tf.nn.relu) # (1, 10, 10, 512)
 
-    conv6_2=tf.layers.conv2d(inputs=conv6_1,filters=512,kernel_size=[3,3],strides=(2,2),padding='valid',activation=tf.nn.relu) # (1, 10, 10, 512)
+	conv7_1=tf.layers.conv2d(inputs=conv6_2,filters=128,kernel_size=[1,1],padding='same',activation=tf.nn.relu)  # (1, 10, 10, 128)
 
-    conv7_1=tf.layers.conv2d(inputs=conv6_2,filters=128,kernel_size=[1,1],padding='same',activation=tf.nn.relu)  # (1, 10, 10, 128)
+	conv7_1=tf.pad(conv7_1, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT") # (1, 12, 12, 128)
 
-    conv7_1=tf.pad(conv7_1, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT") # (1, 12, 12, 128)
+	conv7_2=tf.layers.conv2d(inputs=conv7_1,filters=256,kernel_size=[3,3],strides=(2,2),padding='valid',activation=tf.nn.relu) # (1, 5, 5, 256)
 
-    conv7_2=tf.layers.conv2d(inputs=conv7_1,filters=256,kernel_size=[3,3],strides=(2,2),padding='valid',activation=tf.nn.relu) # (1, 5, 5, 256)
 
+	conv8_1=tf.layers.conv2d(inputs=conv7_2,filters=128,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 5, 5, 128)
 
-    conv8_1=tf.layers.conv2d(inputs=conv7_2,filters=128,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 5, 5, 128)
+	conv8_2=tf.layers.conv2d(inputs=conv8_1,filters=256,kernel_size=[3,3],padding='valid',strides=1,activation=tf.nn.relu) # (1, 3, 3, 256)
 
-    conv8_2=tf.layers.conv2d(inputs=conv8_1,filters=256,kernel_size=[3,3],padding='valid',strides=1,activation=tf.nn.relu) # (1, 3, 3, 256)
+	conv9_1=tf.layers.conv2d(inputs=conv8_2,filters=128,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 3, 3, 128)
 
-    conv9_1=tf.layers.conv2d(inputs=conv8_2,filters=128,kernel_size=[1,1],padding='same',activation=tf.nn.relu) # (1, 3, 3, 128)
+	conv9_2=tf.layers.conv2d(inputs=conv9_1,filters=256,kernel_size=[3,3],padding='valid',strides=1,activation=tf.nn.relu) # (1, 1, 1, 256)
 
-    conv9_2=tf.layers.conv2d(inputs=conv9_1,filters=256,kernel_size=[3,3],padding='valid',strides=1,activation=tf.nn.relu) # (1, 1, 1, 256)
+	# Feed conv4_3 into the L2 normalization layer
+	conv4_3_norm=tf.nn.l2_normalize(conv4_3,dim=0)
 
-    # Feed conv4_3 into the L2 normalization layer
-    conv4_3_norm=tf.nn.l2_normalize(conv4_3)
+	# We precidt n_classes confidence values for each box, hence the confidence predictors have depth n_boxes * n_classes
+	# Output shape of the confidence layers: (batch, height, width, n_boxes * n_classes)
 
-    # We precidt n_classes confidence values for each box, hence the confidence predictors have depth n_boxes * n_classes
-    # Output shape of the confidence layers: (batch, height, width, n_boxes * n_classes)
+	conv4_3_norm_mbox_conf=tf.layers.conv2d(inputs=conv4_3_norm,filters=n_boxes[0]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv4_3_norm_mbox_conf=tf.layers.conv2d(inputs=conv4_3_norm,filters=n_boxes[0]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	fc7_mbox_conf=tf.layers.conv2d(inputs=fc7,filters=n_boxes[1]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    fc7_mbox_conf=tf.layers.conv2d(inputs=fc7,filters=n_boxes[1]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv6_2_mbox_conf=tf.layers.conv2d(inputs=conv6_2,filters=n_boxes[2]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv6_2_mbox_conf=tf.layers.conv2d(inputs=conv6_2,filters=n_boxes[2]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv7_2_mbox_conf=tf.layers.conv2d(inputs=conv7_2,filters=n_boxes[3]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv7_2_mbox_conf=tf.layers.conv2d(inputs=conv7_2,filters=n_boxes[3]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv8_2_mbox_conf=tf.layers.conv2d(inputs=conv8_2,filters=n_boxes[4]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv8_2_mbox_conf=tf.layers.conv2d(inputs=conv8_2,filters=n_boxes[4]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv9_2_mbox_conf=tf.layers.conv2d(inputs=conv9_2,filters=n_boxes[5]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv9_2_mbox_conf=tf.layers.conv2d(inputs=conv9_2,filters=n_boxes[5]*n_classes,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	# We predict 4 box coordinates for each box, hence the localization predictors have depth n_boxes * 4
+	# Output shape of the localization layers: (batch, height, width, n_boxes * 4)
 
-    # We predict 4 box coordinates for each box, hence the localization predictors have depth n_boxes * 4
-    # Output shape of the localization layers: (batch, height, width, n_boxes * 4)
+	#LOCATION LEVEL
 
-    #LOCATION LEVEL
+	conv4_3_norm_mbox_loc=tf.layers.conv2d(inputs=conv4_3_norm,filters=n_boxes[0]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv4_3_norm_mbox_loc=tf.layers.conv2d(inputs=conv4_3_norm,filters=n_boxes[0]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	fc7_mbox_loc=tf.layers.conv2d(inputs=fc7,filters=n_boxes[1]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    fc7_mbox_loc=tf.layers.conv2d(inputs=fc7,filters=n_boxes[1]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv6_2_mbox_loc=tf.layers.conv2d(inputs=conv6_2,filters=n_boxes[2]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv6_2_mbox_loc=tf.layers.conv2d(inputs=conv6_2,filters=n_boxes[2]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv7_2_mbox_loc=tf.layers.conv2d(inputs=conv7_2,filters=n_boxes[3]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv7_2_mbox_loc=tf.layers.conv2d(inputs=conv7_2,filters=n_boxes[3]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv8_2_mbox_loc=tf.layers.conv2d(inputs=conv8_2,filters=n_boxes[4]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv8_2_mbox_loc=tf.layers.conv2d(inputs=conv8_2,filters=n_boxes[4]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
+	conv9_2_mbox_loc=tf.layers.conv2d(inputs=conv9_2,filters=n_boxes[5]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
-    conv9_2_mbox_loc=tf.layers.conv2d(inputs=conv9_2,filters=n_boxes[5]*4,kernel_size=[3,3],padding='same',activation=tf.nn.relu)
 
+	### Generate the anchor boxes
 
-    ### Generate the anchor boxes
+	# Output shape of anchors: (batch, height, width, n_boxes, 8)
+	conv4_3_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[0],next_scale=scales[1],aspect_ratios=aspect_ratios[0],
+	                                         two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[0],this_offsets=offsets[0],clip_boxes=clip_boxes,
+	                                         variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv4_3_norm_mbox_loc)
 
-    # Output shape of anchors: (batch, height, width, n_boxes, 8)
-    conv4_3_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[0],next_scale=scales[1],aspect_ratios=aspect_ratios[0],
-                                             two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[0],this_offsets=offsets[0],clip_boxes=clip_boxes,
-                                             variances=variances,coords=coords,normalize_coords).call(conv4_3_norm_mbox_loc)
+	fc7_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[1],next_scale=scales[2],aspect_ratios=aspect_ratios[1],
+	                                         two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[1],this_offsets=offsets[1],clip_boxes=clip_boxes,
+	                                         variances=variances,coords=coords,normalize_coords=normalize_coords).call(fc7_mbox_loc)
 
-    fc7_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[1],next_scale=scales[2],aspect_ratios=aspect_ratios[1],
-                                             two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[1],this_offsets=offsets[1],clip_boxes=clip_boxes,
-                                             variances=variances,coords=coords,normalize_coords).call(fc7_mbox_loc)
+	conv6_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[2],next_scale=scales[3],aspect_ratios=aspect_ratios[2],
+	                                     two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[2],this_offsets=offsets[2],clip_boxes=clip_boxes,
+	                                     variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv6_2_mbox_loc)
 
-    conv6_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[2],next_scale=scales[3],aspect_ratios=aspect_ratios[2],
-                                         two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[2],this_offsets=offsets[2],clip_boxes=clip_boxes,
-                                         variances=variances,coords=coords,normalize_coords).call(conv6_2_norm_mbox_loc)
+	conv7_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[3],next_scale=scales[4],aspect_ratios=aspect_ratios[3],
+	                                     two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[3],this_offsets=offsets[3],clip_boxes=clip_boxes,
+	                                     variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv7_2_mbox_loc)
 
-    conv7_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[3],next_scale=scales[4],aspect_ratios=aspect_ratios[3],
-                                         two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[3],this_offsets=offsets[3],clip_boxes=clip_boxes,
-                                         variances=variances,coords=coords,normalize_coords).call(conv7_2_norm_mbox_loc)
+	conv8_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[4],next_scale=scales[5],aspect_ratios=aspect_ratios[4],
+	                                 two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[4],this_offsets=offsets[4],clip_boxes=clip_boxes,
+	                                 variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv8_2_mbox_loc)
 
-    conv8_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[4],next_scale=scales[5],aspect_ratios=aspect_ratios[4],
-                                     two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[4],this_offsets=offsets[4],clip_boxes=clip_boxes,
-                                     variances=variances,coords=coords,normalize_coords).call(conv8_2_norm_mbox_loc)
+	conv9_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[5],next_scale=scales[6],aspect_ratios=aspect_ratios[5],
+	                                 two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[5],this_offsets=offsets[5],clip_boxes=clip_boxes,
+	                                 variances=variances,coords=coords,normalize_coords=normalize_coords).call(conv9_2_mbox_loc)
 
-    conv9_2_norm_mbox_priorbox = AnchorBoxes(img_height=img_height,img_width=img_width,this_scale=scales[5],next_scale=scales[6],aspect_ratios=aspect_ratios[5],
-                                     two_boxes_for_ar1=two_boxes_for_ar1,this_steps=steps[5],this_offsets=offsets[5],clip_boxes=clip_boxes,
-                                     variances=variances,coords=coords,normalize_coords).call(conv9_2_norm_mbox_loc)
+	### Reshape
 
-    ### Reshape
+	# Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
+	# We want the classes isolated in the last axis to perform softmax on them
 
-    # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
-    # We want the classes isolated in the last axis to perform softmax on them
+	conv4_3_norm_mbox_conf_reshape = tf.reshape(conv4_3_norm_mbox_conf,[-1,n_classes])
+	fc7_mbox_conf_reshape = tf.reshape(fc7_mbox_conf,[-1,n_classes])
+	conv6_2_mbox_conf_reshape = tf.reshape(conv6_2_mbox_conf,[-1,n_classes])
+	conv7_2_mbox_conf_reshape = tf.reshape(conv7_2_mbox_conf,[-1,n_classes])
+	conv8_2_mbox_conf_reshape = tf.reshape(conv8_2_mbox_conf,[-1,n_classes])
+	conv9_2_mbox_conf_reshape = tf.reshape(conv9_2_mbox_conf,[-1,n_classes])
 
-    conv4_3_norm_mbox_conf_reshape = tf.reshape(conv4_3_norm_mbox_conf,[-1,n_classes])
-    fc7_mbox_conf_reshape = tf.reshape(fc7_mbox_conf,[-1,n_classes])
-    conv6_2_mbox_conf_reshape = tf.reshape(conv6_2_mbox_conf,[-1,n_classes])
-    conv7_2_mbox_conf_reshape = tf.reshape(conv7_2_mbox_conf,[-1,n_classes])
-    conv8_2_mbox_conf_reshape = tf.reshape(conv8_2_mbox_conf,[-1,n_classes])
-    conv9_2_mbox_conf_reshape = tf.reshape(conv9_2_mbox_conf,[-1,n_classes])
+	# Reshape the box predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
+	# We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
 
-    # Reshape the box predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
-    # We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
+	conv4_3_norm_mbox_loc_reshape = tf.reshape(conv4_3_norm_mbox_loc,[-1,4])
+	fc7_mbox_loc_reshape = tf.reshape(fc7_mbox_loc,[-1,4])
+	conv6_2_mbox_loc_reshape = tf.reshape(conv6_2_mbox_loc,[-1,4])
+	conv7_2_mbox_loc_reshape = tf.reshape(conv7_2_mbox_loc,[-1,4])
+	conv8_2_mbox_loc_reshape = tf.reshape(conv8_2_mbox_loc,[-1,4])
+	conv9_2_mbox_loc_reshape = tf.reshape(conv9_2_mbox_loc,[-1,4])
 
-    conv4_3_norm_mbox_loc_reshape = tf.reshape(conv4_3_norm_mbox_loc,[-1,4])
-    fc7_mbox_loc_reshape = tf.reshape(fc7_mbox_loc,[]-1,4)
-    conv6_2_mbox_loc_reshape = tf.reshape(conv6_2_mbox_loc,[-1,4])
-    conv7_2_mbox_loc_reshape = tf.reshape(conv7_2_mbox_loc,[-1,4])
-    conv8_2_mbox_loc_reshape = tf.reshape(conv8_2_mbox_loc,[-1,4])
-    conv9_2_mbox_loc_reshape = tf.reshape(conv9_2_mbox_loc,[-1,4])
+	# Reshape the anchor box tensors, yielding 3D tensors of shape `(batch, height * width * n_boxes, 8)`
 
-    # Reshape the anchor box tensors, yielding 3D tensors of shape `(batch, height * width * n_boxes, 8)`
+	conv4_3_norm_mbox_priorbox_reshape = tf.reshape(conv4_3_norm_mbox_priorbox,[-1,8])
+	fc7_mbox_priorbox_reshape = tf.reshape(fc7_mbox_priorbox,[-1,8])
+	conv6_2_norm_mbox_priorbox_reshape = tf.reshape(conv6_2_norm_mbox_priorbox,[-1,8])
+	conv7_2_norm_mbox_priorbox_reshape = tf.reshape(conv7_2_norm_mbox_priorbox,[-1,8])
+	conv8_2_norm_mbox_priorbox_reshape = tf.reshape(conv8_2_norm_mbox_priorbox,[-1,8])
+	conv9_2_norm_mbox_priorbox_reshape = tf.reshape(conv9_2_norm_mbox_priorbox,[-1,8])
 
-    conv4_3_norm_mbox_priorbox_reshape = tf.reshape(conv4_3_norm_mbox_priorbox,[-1,8])
-    fc7_mbox_priorbox_reshape = tf.reshape(fc7_mbox_priorbox,[-1,8])
-    conv6_2_norm_mbox_priorbox_reshape = tf.reshape(conv6_2_norm_mbox_priorbox,[-1,8])
-    conv7_2_norm_mbox_priorbox_reshape = tf.reshape(conv7_2_norm_mbox_priorbox,[-1,8])
-    conv8_2_norm_mbox_priorbox_reshape = tf.reshape(conv8_2_norm_mbox_priorbox,[-1,8])
-    conv9_2_norm_mbox_priorbox_reshape = tf.reshape(conv9_2_norm_mbox_priorbox,[-1,8])
+	### Concatenate the predictions from the different layers
 
-    ### Concatenate the predictions from the different layers
+	# Axis 0 (batch) and axis 2 (n_classes or 4, respectively) are identical for all layer predictions,
+	# so we want to concatenate along axis 1, the number of boxes per layer
 
-    # Axis 0 (batch) and axis 2 (n_classes or 4, respectively) are identical for all layer predictions,
-    # so we want to concatenate along axis 1, the number of boxes per layer
+	# Output shape of `mbox_conf`: (batch, n_boxes_total, n_classes)
 
-    # Output shape of `mbox_conf`: (batch, n_boxes_total, n_classes)
+	print(conv4_3_norm_mbox_conf_reshape.get_shape())
+	print(fc7_mbox_conf_reshape.get_shape())
+	print(conv6_2_mbox_conf_reshape.get_shape())
+	print(conv7_2_mbox_conf_reshape.get_shape())
+	print(conv8_2_mbox_conf_reshape.get_shape())
+	print(conv9_2_mbox_conf_reshape.get_shape())
 
-    mbox_conf = tf.concat([conv4_3_norm_mbox_conf_reshape,
-                           fc7_mbox_conf_reshape,
-                           conv6_2_mbox_conf_reshape,
-                           conv7_2_mbox_conf_reshape,
-                           conv8_2_mbox_conf_reshape,
-                           conv9_2_mbox_conf_reshape]axis=1)
 
-    # Output shape of `mbox_loc`: (batch, n_boxes_total, 4)
+	mbox_conf = tf.concat([conv4_3_norm_mbox_conf_reshape,
+	                       fc7_mbox_conf_reshape,
+	                       conv6_2_mbox_conf_reshape,
+	                       conv7_2_mbox_conf_reshape,
+	                       conv8_2_mbox_conf_reshape,
+	                       conv9_2_mbox_conf_reshape],axis=0)
 
-    mbox_loc = tf.concat([conv4_3_norm_mbox_loc_reshape,
-                          fc7_mbox_loc_reshape,
-                          conv6_2_mbox_loc_reshape,
-                          conv7_2_mbox_loc_reshape,
-                          conv8_2_mbox_loc_reshape,
-                          conv9_2_mbox_loc_reshape]axis=1])
+	# Output shape of `mbox_loc`: (batch, n_boxes_total, 4)
 
-    # Output shape of `mbox_priorbox`: (batch, n_boxes_total, 8)
+	mbox_loc = tf.concat([conv4_3_norm_mbox_loc_reshape,
+	                      fc7_mbox_loc_reshape,
+	                      conv6_2_mbox_loc_reshape,
+	                      conv7_2_mbox_loc_reshape,
+	                      conv8_2_mbox_loc_reshape,
+	                      conv9_2_mbox_loc_reshape],axis=0)
 
-    mbox_priorbox = tf.concat([conv4_3_norm_mbox_priorbox_reshape,
-                               fc7_mbox_priorbox_reshape,
-                               conv6_2_norm_mbox_priorbox_reshape,
-                               conv7_2_norm_mbox_priorbox_reshape,
-                               conv8_2_norm_mbox_priorbox_reshape,
-                               conv9_2_norm_mbox_priorbox_reshape],axis=1)
+	# Output shape of `mbox_priorbox`: (batch, n_boxes_total, 8)
 
-    # The box coordinate predictions will go into the loss function just the way they are,
-    # but for the class predictions, we'll apply a softmax activation layer first
+	mbox_priorbox = tf.concat([conv4_3_norm_mbox_priorbox_reshape,
+	                           fc7_mbox_priorbox_reshape,
+	                           conv6_2_norm_mbox_priorbox_reshape,
+	                           conv7_2_norm_mbox_priorbox_reshape,
+	                           conv8_2_norm_mbox_priorbox_reshape,
+	                           conv9_2_norm_mbox_priorbox_reshape],axis=0)
 
-    mbox_conf_softmax = tf.nn.softmax(mbox_conf)
+	# The box coordinate predictions will go into the loss function just the way they are,
+	# but for the class predictions, we'll apply a softmax activation layer first
 
-    # Concatenate the class and box predictions and the anchors to one large predictions vector
-    # Output shape of `predictions`: (batch, n_boxes_total, n_classes + 4 + 8)
+	mbox_conf_softmax = tf.nn.softmax(mbox_conf)
 
-    predictions = tf.concat([mbox_conf_softmax, mbox_loc, mbox_priorbox],axis=-1)
+	# Concatenate the class and box predictions and the anchors to one large predictions vector
+	# Output shape of `predictions`: (batch, n_boxes_total, n_classes + 4 + 8)
+
+	predictions = tf.concat([mbox_conf_softmax, mbox_loc, mbox_priorbox],axis=-1)
+
+	print(predictions.get_shape())
 
 
 
