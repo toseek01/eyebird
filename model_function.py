@@ -216,11 +216,6 @@ def ssd_300(image_size,
 
 
 
-	loc=r'/home/eva_01/Desktop/SSD_project/testImages/car.jpg'
-
-	img=Image.open(loc)
-
-	img=np.asarray(img.resize((300,300)),dtype=np.float32)
 
 	input_layer = tf.reshape(tf.Variable(img,tf.float32),[-1,300,300,3])
 
