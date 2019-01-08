@@ -141,7 +141,7 @@ class AnchorBoxes:
         # We need the shape of the input tensor
         batch_size, feature_map_height, feature_map_width, feature_map_channels=x.get_shape().as_list()
 
-        # Compute the grid of box center points. They are identical for all aspect ratios
+        # Compute the grid of box center points. They are identical for all aspect ratios 
 
 
         # Compute the step sizes, i.e. how far apart the anchor box center points will be vertically and horizontally.
@@ -226,7 +226,7 @@ class AnchorBoxes:
         return boxes_tensor
 
 
-
+#Testing
 if __name__=='__main__':
 
     img_size = (300,300,3)
