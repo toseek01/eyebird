@@ -22,4 +22,7 @@ https://gdo152.llnl.gov/cowc/mundhenk_et_al_eccv_2016.pdf
 
 SSD Network - это набор взаимосвязанных файлов , где каждый файл отвечает за свое поле работы , начиная с Data augmentation
 и заканчивая Anchor Boxes Decoding
-Ниже мы поговорим о model_function.py
+Ключевой файл в проекте model_function.py
+Файл описывает обучающую архитектуру сети.На вход подаются изображения 300х300 пикселей
+
+
