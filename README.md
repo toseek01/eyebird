@@ -58,7 +58,7 @@ VGG16
 
 [ssd_input_encoder.py](https://github.com/toseek01/eyebird/blob/master/ssd_input_encoder.py)
 
-Задача этого файла разить изображение на 8732 ground truth бокса , в которых будут содержаться данные о том что находится в боксе и где.
+Задача этого файла разить изображение на 8732 ground truth боксов , в которых будут содержаться данные о том что находится в боксе и где.
 Дело в том что для SSD не подойдет обычный вектор , так как в нем нет места для того чтобы полностью описать бокс .Такого рода ground truth требует формат/концепция сети.После того как {ground truth} приведены в тот же формат что и {predictions} мы уже можем применять [Loss_Function_SSD.py](https://github.com/toseek01/eyebird/blob/master/AnchorBoxes.py)
 
 [Utilities.py](https://github.com/toseek01/eyebird/blob/master/bounding_box_utils.py)
