@@ -33,4 +33,5 @@ VGG16
 Для упрощения обучения сети можно воспользоваться [Transfer Learning](https://towardsdatascience.com/transfer-learning-in-tensorflow-9e4f7eae3bb4) и предобученной VGG-16 c уже посчитанными весами. Для этого можно использовать уже готовые библиотеки [tensornets](https://github.com/taehoonlee/tensornets) или же [vgg-tensorflow](https://github.com/machrisaa/tensorflow-vgg).
 Единственное что надо будет изменить в config file ,чтобы сеть отдавала не full connected layer,а сверточный слой conv4_3 ,так как он учавствует в обучение (классификация объекта и его локация)
 
-В обучение учавствует 6 слоёв, которые генерируют 8732 box prediction.На выходе [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) мы получаем переменную {predictions}
+В обучение учавствует 6 слоёв, которые генерируют 8732 box prediction.На выходе [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) мы получаем переменную {predictions} 
+##### Output shape of predictions: (batch, n_boxes_total, n_classes + 4 + 8)
