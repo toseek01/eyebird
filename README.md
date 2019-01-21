@@ -38,3 +38,4 @@ VGG16
 Значение {predictions} в [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) как и сам файл [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) являются ключевыми , поэтому все остальные  папки и файлы написаны в качестве вспомогающих,но очень важных элементов сети. Далее , постараемся кратко пробежаться по тому ,какой файл ,за что что отвечает и что считает.Помимо того ,что мы будем разговаривать о значении каждого дополнительного файла здесь ,вы также можете найти подробные комментарии уже непосредственно в самом файле.
 
 Итак,по порядку
+[AnchorBoxes.py]https://github.com/toseek01/eyebird/blob/master/AnchorBoxes.py {predictions} состоят из конкатенации 3 видов тензоров (Confidence,Location,AnchorBoxes) и если первые два рассчитываются уже внутри самой сети ,то тензор с AnchorBoxes не расчитывается,а является производным от уже заранее предраустановленными значениями anchor boxes.
