@@ -35,3 +35,4 @@ VGG16
 
 В обучение учавствует 6 слоёв, которые генерируют 8732 box prediction.На выходе [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) мы получаем переменную {predictions} 
 ##### Output shape of predictions: (batch, n_boxes_total, n_classes + 4 + 8)
+Значение {predictions} в [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) как и сам файл [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py) являются ключевыми , поэтому все остальные  папки и файлы написаны в качестве вспомогающих,но очень важных элементов сети. Далее , постараемся кратко пробежаться по тому ,какой файл ,за что что отвечает и что считает.
