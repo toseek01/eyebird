@@ -24,7 +24,10 @@ SSD Network - это набор взаимосвязанных файлов , г
 и заканчивая Anchor Boxes Decoding
 Ключевой файл в проекте [model_function.py](https://github.com/toseek01/eyebird/blob/master/model_function.py)
 Файл описывает обучающую архитектуру сети.На вход подаются изображения 300х300 пикселей.Для извлечение features используется архитектура 
-VGG-16 ,только последние full connected layers заменяются на convolutional layers и далее добавляются еще дополнительные convolutional layers.Так же для уменьшения затрат в сверточных слоях задействуются буферные [1х1 свертки](https://stats.stackexchange.com/questions/194142/what-does-1x1-convolution-mean-in-a-neural-network)
+VGG16 
+![Image alt](https://github.com/toseek01/eyebird/blob/master/illustrator/ssd_arch.png)
+
+Только последние full connected layers заменяются на convolutional layers и далее добавляются еще дополнительные convolutional layers.Так же для уменьшения затрат в сверточных слоях задействуются буферные [1х1 свертки](https://stats.stackexchange.com/questions/194142/what-does-1x1-convolution-mean-in-a-neural-network)
 
 Для упрощения обучения сети можно воспользоваться [Transfer Learning](https://towardsdatascience.com/transfer-learning-in-tensorflow-9e4f7eae3bb4) и предобученной VGG-16 c уже посчитанными весами. Для этого можно использовать уже готовые библиотеки [tensornets](https://github.com/taehoonlee/tensornets) или же [vgg-tensorflow](https://github.com/machrisaa/tensorflow-vgg).
 Единственное что надо будет изменить в config file ,чтобы сеть отдавала не full connected layer,а сверточный слой conv4_3 ,так как он учавствует в обучение (классификация объекта и его локация)
