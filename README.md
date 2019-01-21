@@ -43,3 +43,4 @@ VGG16
 
 {predictions} состоят из конкатенации 3 видов тензоров (Confidence,Location,AnchorBoxes) и если первые два рассчитываются уже внутри самой сети ,то тензор с AnchorBoxes не расчитывается,а является производным от уже заранее предраустановленны значений anchor boxes.
 Цель AnchorBox покрыть изображение сеткой координат ,создав тем самым NxN сегментов ,центры которых будут являться для центрами координат для m AnchorBoxes , с предрассчитанными шириной и высотой (w и h)
+![Image alt](https://github.com/toseek01/eyebird/blob/master/illustrator/anchorbox.png)
