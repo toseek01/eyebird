@@ -55,3 +55,8 @@ VGG16
 
 Нам нужно учитывать ,что количесвто негативных предсказаний на порядки больше положительных ,чтобы сеть не переобучалась на негативных примерах и попусту не тратила на них ресурсы,мы применим [Hard Negative Mining algorithm](https://www.quora.com/What-does-it-mean-by-negative-and-hard-negative-training-examples-in-computer-vision), цель которого брать положительные и негативные боксы в соотношении 1:3.
 При этом негативные выбираются по принципу сортировки ,от большей ошибки к меньшей
+
+[ssd_input_encoder.py](https://github.com/toseek01/eyebird/blob/master/ssd_input_encoder.py)
+
+Задача этого файла разить изображение на 8732 ground truth бокса , в которых будут содержаться данные о том что находится в боксе и где.
+Дело в том что для SSD не подойдет обычный вектор , так как в нем нет места для того чтобы полностью описать бокс .Такого рода ground truth требует формат/концепция сети.После того как {ground truth} приведены в тот же формат что и {predictions} мы уже можем применять [Loss_Function_SSD.py](https://github.com/toseek01/eyebird/blob/master/AnchorBoxes.py)
