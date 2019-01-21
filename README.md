@@ -64,3 +64,7 @@ VGG16
 [Utilities.py](https://github.com/toseek01/eyebird/blob/master/bounding_box_utils.py)
 
 В нем содержатся конвертер координат , к примеру из относительных в абсолютные и наооборот ,а так же из одного формата в другой ,например, (xmin,ymin,xmax,ymax) --> (xmin,xmax,ymin,ymax). А так же функция [IoU](https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d) и вспомогательная функция для рассчета Intersection Area - без нее невозможно будет рассчитать [IoU](https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d)
+
+[DecodeDetections.py](https://github.com/toseek01/eyebird/blob/master/DecodeDetections.py)
+
+Модель предсказывает местоположение и класс объекта в виде многомерного тензора . Этот файл берет на вход тензор ,а на выходе отдает ,привычные и понятные для человека данные (class_id,confidence,xmin,ymin,xmax,ymax), таким образом на изображении мы уже можешь выделять объект
