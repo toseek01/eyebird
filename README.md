@@ -64,6 +64,7 @@ VGG16
 [Utilities.py](https://github.com/toseek01/eyebird/blob/master/bounding_box_utils.py)
 
 В нем содержатся конвертер координат , к примеру из относительных в абсолютные и наооборот ,а так же из одного формата в другой ,например, (xmin,ymin,xmax,ymax) --> (xmin,xmax,ymin,ymax). А так же функция [IoU](https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d) и вспомогательная функция для рассчета Intersection Area - без нее невозможно будет рассчитать [IoU](https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d)
+![Image alt](https://github.com/toseek01/eyebird/blob/master/illustrator/IoU.png)
 
 [DecodeDetections.py](https://github.com/toseek01/eyebird/blob/master/DecodeDetections.py)
 
