@@ -60,3 +60,7 @@ VGG16
 
 Задача этого файла разить изображение на 8732 ground truth бокса , в которых будут содержаться данные о том что находится в боксе и где.
 Дело в том что для SSD не подойдет обычный вектор , так как в нем нет места для того чтобы полностью описать бокс .Такого рода ground truth требует формат/концепция сети.После того как {ground truth} приведены в тот же формат что и {predictions} мы уже можем применять [Loss_Function_SSD.py](https://github.com/toseek01/eyebird/blob/master/AnchorBoxes.py)
+
+[Utilities.py](https://github.com/toseek01/eyebird/blob/master/bounding_box_utils.py)
+
+В нем содержатся конвертер координат , к примеру из относительных в абсолютные и наооборот ,а так же из одного формата в другой ,например, (xmin,ymin,xmax,ymax) --> (xmin,xmax,ymin,ymax). А так же функция [IoU](https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d) и вспомогательная функция для рассчета Intersection Area - без нее невозможно будет рассчитать [IoU](https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d)
