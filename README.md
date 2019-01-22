@@ -45,7 +45,7 @@ VGG16
 Цель AnchorBox покрыть изображение сеткой координат ,создав тем самым NxN сегментов ,центры которых будут являться для центрами координат для m AnchorBoxes , с предрассчитанными шириной и высотой (w и h)
 ![Image alt](https://github.com/toseek01/eyebird/blob/master/illustrator/anchorbox.png)
 
-[Loss_Function_SSD.py](https://github.com/toseek01/eyebird/blob/master/AnchorBoxes.py)  
+[Loss_Function_SSD.py](https://github.com/toseek01/eyebird/blob/master/Loss_Function_SSD.py)  
 
 Функция потерь состоит из двух коспонент :
 - Потери при классификации (насколько корректно сеть определят класс объекта и "видит" ли она его вообще)
